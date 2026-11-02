@@ -3,7 +3,6 @@ package com.luycaslima.harpia.ui.presentation.feature.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -46,7 +45,7 @@ fun Nav () {
             HomeScreen(navController)
         }
         composable (route = "Capture"){
-            CaptureScreen(navController)
+            CaptureScreen(navController,)
         }
     }
 }

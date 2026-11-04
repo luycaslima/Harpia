@@ -1,6 +1,9 @@
 package com.luycaslima.harpia.data
 
-data class CapturedFrameInfo(val filename: String,
+import android.graphics.Bitmap
+
+data class CapturedFrame(val filename: String,
+                         val bitmap : Bitmap,
                          val positionX: Float,
                          val positionY: Float,
                          val positionZ: Float,

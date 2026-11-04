@@ -2,6 +2,7 @@ package com.luycaslima.harpia.ui.presentation.feature.capture
 
 import android.Manifest
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -38,7 +39,7 @@ import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Plane
 import java.io.File
-import com.luycaslima.harpia.data.CapturedFrameInfo
+import com.luycaslima.harpia.data.CapturedFrame
 import com.luycaslima.harpia.ui.presentation.common.TopCenterBar
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.createAnchorOrNull
@@ -54,13 +55,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.ar.core.Pose
+import com.luycaslima.harpia.utils.getEulerRotation
+import com.luycaslima.harpia.utils.toCorrectedBitmap
 import com.luycaslima.harpia.utils.toJpegByteArray
-import io.github.sceneview.node.ImageNode
+import io.github.sceneview.math.Position
+import io.github.sceneview.math.Scale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+
+
+
 
 //TODO decouple functions from this screen
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
@@ -75,7 +83,7 @@ fun CaptureScreen(
     //Like use state
     var shouldCaptureNextFrame by remember { mutableStateOf(false) }
     var captureCount by remember { mutableIntStateOf(0) }
-    var lastCapturedInfo by remember {  mutableStateOf<CapturedFrameInfo?>(null) }
+    var lastCapturedInfo by remember {  mutableStateOf<CapturedFrame?>(null) }
     var statusMessage by remember {  mutableStateOf("Ready To Capture") }
 
     val sceneRecorder = rememberSceneRecorder()
@@ -85,7 +93,7 @@ fun CaptureScreen(
     //val modelInstance = rememberModelInstance(modelLoader, "models/basic_item_stand.glb")
     //TODO use ImageNode to render the images on the AR space
     //TODO keep all the information on a Data class and put on the state here
-    var imagePlanes by remember { mutableStateOf<Bitmap?>(null) }
+    val captureFrames = remember { mutableListOf<CapturedFrame>() }
 
     var anchor by remember { mutableStateOf<Anchor?>(null) }
 
@@ -158,6 +166,7 @@ fun CaptureScreen(
                                     //process image in the background thread
                                     coroutineScope.launch(Dispatchers.IO) {
                                         val jpegBytes = rawImage.toJpegByteArray()
+                                        val bitmap = rawImage.toCorrectedBitmap()
                                         rawImage.close()
 
                                         // Save file locally
@@ -173,8 +182,9 @@ fun CaptureScreen(
                                         // Update verification UI
                                         launch(Dispatchers.Main) {
                                             captureCount++
-                                            lastCapturedInfo = CapturedFrameInfo(
+                                            val capture = CapturedFrame(
                                                 filename = fileName,
+                                                bitmap = bitmap,
                                                 positionX = pose.tx(),
                                                 positionY = pose.ty(),
                                                 positionZ = pose.tz(),
@@ -185,6 +195,8 @@ fun CaptureScreen(
                                                 focalLengthX = focalLength[0],
                                                 focalLengthY = focalLength[1]
                                             )
+                                            lastCapturedInfo = capture
+                                            captureFrames.add(capture)
                                             statusMessage = "Captured successfully!"
                                         }
                                     }
@@ -235,6 +247,16 @@ fun CaptureScreen(
                                         fontSize = 12.sp
                                     )
                                 }
+                            }
+                            captureFrames.forEach { c ->
+                                ImageNode(bitmap = c.bitmap,
+                                    scale = Scale(0.1f, 0.1f, 0.1f),
+                                    position = Position(
+                                        c.positionX,
+                                        c.positionY,
+                                        c.positionZ
+                                    ),rotation = getEulerRotation(c.rotationQx, c.rotationQy, c.rotationQz, c.rotationQw)
+                                )
                             }
                             /*anchor?.let { a ->
                                 AnchorNode(anchor = a) {

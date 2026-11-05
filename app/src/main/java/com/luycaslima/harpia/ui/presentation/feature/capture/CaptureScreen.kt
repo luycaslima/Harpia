@@ -1,26 +1,16 @@
 package com.luycaslima.harpia.ui.presentation.feature.capture
 
 import android.Manifest
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,7 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
@@ -38,26 +27,19 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Plane
-import java.io.File
 import com.luycaslima.harpia.data.CapturedFrame
 import com.luycaslima.harpia.ui.presentation.common.TopCenterBar
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.capture.rememberSceneRecorder
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FabPosition
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.google.ar.core.Pose
+import com.luycaslima.harpia.ui.presentation.common.CameraButton
+import com.luycaslima.harpia.ui.presentation.common.debug.DebugInfoCard
 import com.luycaslima.harpia.utils.getEulerRotation
 import com.luycaslima.harpia.utils.toCorrectedBitmap
-import com.luycaslima.harpia.utils.toJpegByteArray
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Scale
 import kotlinx.coroutines.Dispatchers
@@ -65,9 +47,6 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-
-
 
 
 //TODO decouple functions from this screen
@@ -82,6 +61,7 @@ fun CaptureScreen(
 
     //Like use state
     var shouldCaptureNextFrame by remember { mutableStateOf(false) }
+    var processingPhoto by remember { mutableStateOf(false)}
     var captureCount by remember { mutableIntStateOf(0) }
     var lastCapturedInfo by remember {  mutableStateOf<CapturedFrame?>(null) }
     var statusMessage by remember {  mutableStateOf("Ready To Capture") }
@@ -111,19 +91,11 @@ fun CaptureScreen(
             },
             floatingActionButtonPosition = FabPosition.Center,
             floatingActionButton = {
-                FloatingActionButton(
-                    modifier = Modifier.size(64.dp),
-                    onClick = {
-                        statusMessage = "Capturing .."
+                CameraButton(isProcessing = processingPhoto, onClick = {
+                        statusMessage= "Capturing..."
                         shouldCaptureNextFrame = true
-                    },
-                    shape = CircleShape, // Makes the button perfectly round
-                    containerColor = MaterialTheme.colorScheme.primary, // Optional background color
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-
-                ) {
-
-                }
+                    }
+                )
             },
             content = { paddingValues ->
                 //When true it will capture the system back button command and inject what i pass
@@ -152,6 +124,7 @@ fun CaptureScreen(
                         ,planeRenderer = true,
                         onSessionUpdated = { _, frame ->
                             if(shouldCaptureNextFrame){
+                                processingPhoto = true
                                 shouldCaptureNextFrame = false
                                 val pose : Pose = frame.camera.pose
                                 val intrinsics = frame.camera.imageIntrinsics
@@ -165,14 +138,14 @@ fun CaptureScreen(
 
                                     //process image in the background thread
                                     coroutineScope.launch(Dispatchers.IO) {
-                                        val jpegBytes = rawImage.toJpegByteArray()
+                                        //val jpegBytes = rawImage.toJpegByteArray()
                                         val bitmap = rawImage.toCorrectedBitmap()
                                         rawImage.close()
 
                                         // Save file locally
-                                        val outputDir = File(ctx.filesDir, "captures").apply { mkdirs() }
-                                        val imageFile = File(outputDir, fileName)
-                                        imageFile.writeBytes(jpegBytes)
+                                        //val outputDir = File(ctx.filesDir, "captures").apply { mkdirs() }
+                                        //val imageFile = File(outputDir, fileName)
+                                        //imageFile.writeBytes(jpegBytes)
 
                                         // ARCore camera intrinsics are always returned unrotated relative to the native camera sensor orientation.
                                         // Changing orientation, need to also adjust this
@@ -198,6 +171,7 @@ fun CaptureScreen(
                                             lastCapturedInfo = capture
                                             captureFrames.add(capture)
                                             statusMessage = "Captured successfully!"
+                                            processingPhoto = false
                                         }
                                     }
 
@@ -216,67 +190,21 @@ fun CaptureScreen(
                         }) {
 
                         // Verification Overlay HUD
-                        Card(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(horizontal = 16.dp, vertical = 24.dp)
-                                .fillMaxWidth(0.85f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.75f))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text("Total Captures: $captureCount", color = Color.Green, fontSize = 16.sp)
-                                Text("Status: $statusMessage", color = Color.White, fontSize = 14.sp)
-
-                                lastCapturedInfo?.let { info ->
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text("File: ${info.filename}", color = Color.Yellow, fontSize = 12.sp)
-                                    Text(
-                                        "Pos (XYZ): %.3f, %.3f, %.3f".format(info.positionX, info.positionY, info.positionZ),
-                                        color = Color.Cyan,
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        "Rot (Q): %.2f, %.2f, %.2f, %.2f".format(info.rotationQx, info.rotationQy, info.rotationQz, info.rotationQw),
-                                        color = Color.Cyan,
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        "Focal (fx, fy): %.1f, %.1f".format(info.focalLengthX, info.focalLengthY),
-                                        color = Color.LightGray,
-                                        fontSize = 12.sp
-                                    )
-                                }
-                            }
-                            captureFrames.forEach { c ->
+                        DebugInfoCard(statusMessage= statusMessage, captureCount= captureCount, lastCapturedFrame = lastCapturedInfo)
+                        captureFrames.forEach { c ->
                                 ImageNode(bitmap = c.bitmap,
                                     scale = Scale(0.1f, 0.1f, 0.1f),
                                     position = Position(
                                         c.positionX,
                                         c.positionY,
                                         c.positionZ
-                                    ),rotation = getEulerRotation(c.rotationQx, c.rotationQy, c.rotationQz, c.rotationQw)
+                                    ),
+                                    rotation = getEulerRotation(c.rotationQx, c.rotationQy, c.rotationQz, c.rotationQw)
                                 )
                             }
-                            /*anchor?.let { a ->
-                                AnchorNode(anchor = a) {
-                                    modelInstance?.let { instance ->
-                                        ModelNode(
-                                            modelInstance = instance,
-                                            scaleToUnits = 0.3f ,  // 30cm cube,
-                                            centerOrigin = io.github.sceneview.math.Position(
-                                                x = 0f,
-                                                y = 0f,
-                                                z = 0f
-                                            )
-                                        )
-                                    }
-                                }
-                            }*/
+
                         }
                     }
-                }
-
             })
     } else {
         navController.popBackStack()

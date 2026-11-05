@@ -12,4 +12,5 @@ data class CapturedFrame(val filename: String,
                          val rotationQz: Float,
                          val rotationQw: Float,
                          val focalLengthX: Float,
-                         val focalLengthY: Float)
+                         val focalLengthY: Float
+)

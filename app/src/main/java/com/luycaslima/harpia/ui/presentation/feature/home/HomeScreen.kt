@@ -22,6 +22,17 @@ import com.example.compose.snippets.components.AppIcons
 import com.luycaslima.harpia.ui.presentation.common.TopBar
 
 
+/*
+* Button Plus Create a new Project
+* This project will keep camera intrinscs
+* Name
+* Date taken
+* The Photos order of taken (and renaming it when one is inserted there)
+* Camera Extrinsics (future)
+* Depth camera photo (future)
+* Resulting model (if possible)
+* */
+
 @Composable
 fun HomeScreen(navController: NavController) {
     Scaffold(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars), topBar = {

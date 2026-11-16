@@ -35,15 +35,22 @@ class CaptureViewModel : ViewModel() {
     val captureNextFrame: StateFlow<Boolean> = _captureNextFrame.asStateFlow()
 
     fun requestCapture() {
+        if (_uiState.value.isProcessingPhoto || _captureNextFrame.value) return
         //it -> shorthand for currentState -> currentState.copy
         _uiState.update { it.copy(isProcessingPhoto = true , statusMessage = "Capturing...") }
         _captureNextFrame.value = true
+    }
+
+    // Atomically consumes the trigger; returns true for exactly one caller
+    fun tryConsumeCaptureRequest(): Boolean {
+        return _captureNextFrame.compareAndSet(expect = true, update = false)
     }
 
     fun onFrameCaptured(rawImage : Image, cameraPose : Pose, cameraIntrinsics: CameraIntrinsics ){
 
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.GERMAN).format(Date())
         val fileName = "IMG_$timeStamp.jpg"
+        val focalLength = cameraIntrinsics.focalLength
 
         viewModelScope.launch (Dispatchers.IO){
 
@@ -51,11 +58,10 @@ class CaptureViewModel : ViewModel() {
                 val bitmap = rawImage.toCorrectedBitmap()
                 rawImage.close()
 
-                val focalLength = cameraIntrinsics.focalLength
-
                 val captured = CapturedFrame(
                     filename = fileName,
                     bitmap = bitmap,
+                    index = uiState.value.captureCount,
                     positionX = cameraPose.tx(),
                     positionY = cameraPose.ty(),
                     positionZ = cameraPose.tz(),

@@ -1,4 +1,4 @@
-package com.luycaslima.harpia.ui.presentation.common.debug
+package com.luycaslima.harpia.ui.presentation.feature.capture.components.debug
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 
 data class CapturedFrame(val filename: String,
                          val bitmap : Bitmap,
+                         val index : Int,
                          val positionX: Float,
                          val positionY: Float,
                          val positionZ: Float,

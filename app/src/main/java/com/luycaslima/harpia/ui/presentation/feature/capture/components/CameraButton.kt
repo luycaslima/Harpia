@@ -1,4 +1,4 @@
-package com.luycaslima.harpia.ui.presentation.common
+package com.luycaslima.harpia.ui.presentation.feature.capture.components
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape

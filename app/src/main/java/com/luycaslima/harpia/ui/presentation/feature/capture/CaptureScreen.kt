@@ -1,7 +1,6 @@
 package com.luycaslima.harpia.ui.presentation.feature.capture
 
 import android.Manifest
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,51 +12,34 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.ar.core.Anchor
 import com.google.ar.core.Config
-import com.google.ar.core.Plane
-import com.luycaslima.harpia.data.CapturedFrame
 import com.luycaslima.harpia.ui.presentation.common.TopCenterBar
 import io.github.sceneview.ar.ARSceneView
-import io.github.sceneview.ar.arcore.createAnchorOrNull
-import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.capture.rememberSceneRecorder
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.shouldShowRationale
-import com.google.ar.core.Pose
-import com.luycaslima.harpia.ui.presentation.common.CameraButton
-import com.luycaslima.harpia.ui.presentation.common.debug.DebugInfoCard
+import com.luycaslima.harpia.ui.presentation.feature.capture.components.CameraButton
+import com.luycaslima.harpia.ui.presentation.feature.capture.components.FrameCarousel
+import com.luycaslima.harpia.ui.presentation.feature.capture.components.debug.DebugInfoCard
 import com.luycaslima.harpia.utils.getEulerRotation
-import com.luycaslima.harpia.utils.toCorrectedBitmap
-import io.github.sceneview.ar.arcore.intrinsics
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Scale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -86,7 +68,7 @@ fun CaptureScreen(
     //val modelInstance = rememberModelInstance(modelLoader, "models/basic_item_stand.glb")
 
     if (cameraPermissionState.status.isGranted) {
-        Scaffold(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
+        Scaffold(/*modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)*/
             topBar = {
                 TopCenterBar("Capture", onClick = {
                     navController.popBackStack()
@@ -101,7 +83,9 @@ fun CaptureScreen(
             },
             content = { paddingValues ->
                 //When true it will capture the system back button command and inject what i pass
-                Box(modifier = Modifier.padding(paddingValues)) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)) {
                     BackHandler(enabled = true) {
                         // 1. Your custom logic when back is pressed
                         navController.popBackStack()
@@ -130,19 +114,23 @@ fun CaptureScreen(
                                     val intrinsics = frame.camera.imageIntrinsics
                                     val rawImage = frame.acquireCameraImage()
 
-                                    viewModel.onFrameCaptured(
-                                        rawImage,
-                                        cameraPose = pose,
-                                        cameraIntrinsics = intrinsics
-                                    )
+                                    if (viewModel.tryConsumeCaptureRequest()) {
+                                        viewModel.onFrameCaptured(
+                                            rawImage = rawImage,
+                                            cameraPose = pose,
+                                            cameraIntrinsics = intrinsics
+                                        )
+                                    } else {
+                                        rawImage.close()
+                                    }
+
                                 }catch (e: Exception){
                                     //Raise a window calling error if hits here
                                     android.util.Log.w("CaptureScreen", "Frame not ready yet, retrying...", e)
                                 }
                             }
                         }) {
-                        // Verification Overlay HUD
-                        DebugInfoCard(statusMessage= uiState.statusMessage, captureCount= uiState.captureCount, lastCapturedFrame = uiState.lastCaptureInfo)
+
                         uiState.capturedFrames.forEach { c ->
                                 ImageNode(
                                     bitmap = c.bitmap,
@@ -153,9 +141,20 @@ fun CaptureScreen(
                             }
 
                         }
+                    // Verification Overlay HUD
+                    DebugInfoCard(statusMessage= uiState.statusMessage, captureCount= uiState.captureCount, lastCapturedFrame = uiState.lastCaptureInfo)
+                    if (uiState.capturedFrames.isNotEmpty()) {
+                        FrameCarousel(
+                            frames = uiState.capturedFrames,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 88.dp) // Clears the center FAB
+                        )
+                    }
                 }
             })
     } else {
+        //Improve This is for logic reasons
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
                 val rationaleText = if (cameraPermissionState.status.shouldShowRationale) {

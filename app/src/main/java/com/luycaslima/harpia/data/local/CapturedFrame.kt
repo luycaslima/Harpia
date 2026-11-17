@@ -1,9 +1,10 @@
-package com.luycaslima.harpia.data
+package com.luycaslima.harpia.data.local
 
 import android.graphics.Bitmap
 
 data class CapturedFrame(val filename: String,
-                         val bitmap : Bitmap,
+                         val arBitmap : Bitmap,
+                         val thumbnailBitmap : Bitmap,
                          val index : Int,
                          val positionX: Float,
                          val positionY: Float,

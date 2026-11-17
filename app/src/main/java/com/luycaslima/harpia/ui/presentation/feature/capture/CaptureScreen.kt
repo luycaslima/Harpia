@@ -46,7 +46,7 @@ import io.github.sceneview.math.Scale
 @Composable
 fun CaptureScreen(
     navController: NavController,
-    viewModel: CaptureViewModel = viewModel()
+    viewModel: CaptureViewModel = viewModel(factory = CaptureViewModel.Factory)
 ) {
     val ctx = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -133,7 +133,7 @@ fun CaptureScreen(
 
                         uiState.capturedFrames.forEach { c ->
                                 ImageNode(
-                                    bitmap = c.bitmap,
+                                    bitmap = c.arBitmap,
                                     scale = Scale(0.1f, 0.1f, 0.1f),
                                     position = Position(c.positionX, c.positionY, c.positionZ),
                                     rotation = getEulerRotation(c.rotationQx, c.rotationQy, c.rotationQz, c.rotationQw)

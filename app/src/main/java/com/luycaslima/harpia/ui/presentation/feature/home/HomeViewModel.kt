@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.Dispatchers
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
@@ -47,6 +48,30 @@ class HomeViewModel(val repository: ProjectStorageRepository): ViewModel() {
                 )
             }
         }
+    }
+
+    fun deleteProject( projectID : String) {
+        if (projectID.isBlank() ) return
+        viewModelScope.launch {
+            try{
+                repository.deleteProject(projectID)
+
+                _uiState.update {currentState ->
+                    if(currentState is HomeUiState.Success){
+                        currentState.copy(
+                            projects = currentState.projects.filterNot { it.id == projectID }
+                        )
+                    }else {
+                        currentState
+                    }
+                }
+            }catch ( e : Exception) {
+                _uiState.value = HomeUiState.Error(
+                    e.localizedMessage ?: "Failed to delete project"
+                )
+            }
+        }
+
     }
 
     //What is this?

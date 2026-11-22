@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.luycaslima.harpia.ui.presentation.feature.capture.CaptureScreen
+import com.luycaslima.harpia.ui.presentation.feature.capture.ARCaptureScreen
 import com.luycaslima.harpia.ui.presentation.feature.home.HomeScreen
 
 
@@ -46,7 +46,7 @@ fun Nav () {
             HomeScreen(navController,)
         }
         composable (route = "Capture"){
-            CaptureScreen(navController,)
+            ARCaptureScreen(navController,)
         }
     }
 }

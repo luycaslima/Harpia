@@ -5,12 +5,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -31,6 +28,7 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.shouldShowRationale
@@ -44,9 +42,9 @@ import io.github.sceneview.math.Scale
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CaptureScreen(
+fun ARCaptureScreen(
     navController: NavController,
-    viewModel: CaptureViewModel = viewModel(factory = CaptureViewModel.Factory)
+    viewModel: ARCaptureViewModel = viewModel(factory = ARCaptureViewModel.Factory)
 ) {
     val ctx = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -139,7 +137,10 @@ fun CaptureScreen(
                                     rotation = getEulerRotation(c.rotationQx, c.rotationQy, c.rotationQz, c.rotationQw)
                                 )
                             }
-
+                        /*SphereNode(
+                            radius = 0.01f, // 2 cm dot
+                            position = Position(x = 0.1f, y = 0.5f, z = -1.0f)
+                            )*/
                         }
                     // Verification Overlay HUD
                     DebugInfoCard(statusMessage= uiState.statusMessage, captureCount= uiState.captureCount, lastCapturedFrame = uiState.lastCaptureInfo)

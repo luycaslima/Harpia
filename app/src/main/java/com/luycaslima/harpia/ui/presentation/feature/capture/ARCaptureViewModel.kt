@@ -22,11 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-data class CaptureUiState (
+data class ARCaptureUiState (
     val currentProject : ReconstructionProject? = null,
     val isProcessingPhoto : Boolean = false,
     val captureCount : Int = 0,
@@ -36,9 +33,9 @@ data class CaptureUiState (
 )
 
 //Business Logic goes Here
-class CaptureViewModel(private val repository : ProjectStorageRepository) : ViewModel( ) {
-    private val _uiState = MutableStateFlow<CaptureUiState>(CaptureUiState())
-    val uiState : StateFlow<CaptureUiState> = _uiState.asStateFlow()
+class ARCaptureViewModel(private val repository : ProjectStorageRepository) : ViewModel( ) {
+    private val _uiState = MutableStateFlow<ARCaptureUiState>(ARCaptureUiState())
+    val uiState : StateFlow<ARCaptureUiState> = _uiState.asStateFlow()
 
 
     private val _captureNextFrame = MutableStateFlow(false)
@@ -81,7 +78,7 @@ class CaptureViewModel(private val repository : ProjectStorageRepository) : View
             try {
                 val jpegBytes = rawImage.toJpegBytes(quality = 95)
 
-                val baseProject = _uiState.value.currentProject ?: repository.createProject("test", intrinsicsData)
+                val baseProject = _uiState.value.currentProject ?: repository.createProject( intrinsics = intrinsicsData)
 
                 val updatedProject = repository.addPhotoProject(
                     project = baseProject,
@@ -142,7 +139,7 @@ class CaptureViewModel(private val repository : ProjectStorageRepository) : View
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = checkNotNull(this[APPLICATION_KEY])
-                CaptureViewModel(ProjectStorageRepository(app.applicationContext))
+                ARCaptureViewModel(ProjectStorageRepository(app.applicationContext))
             }
         }
     }

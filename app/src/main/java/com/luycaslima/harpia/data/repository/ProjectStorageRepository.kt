@@ -6,12 +6,20 @@ import com.luycaslima.harpia.data.local.CameraIntrinsicsData
 import com.luycaslima.harpia.data.local.CapturedPhoto
 import com.luycaslima.harpia.data.local.ReconstructionProject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.util.UUID
+import androidx.core.content.edit
 
 class ProjectStorageRepository(private val context : Context) {
+
+    /*private val prefs by lazy {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }*/
 
     private val json = Json {
         prettyPrint = true
@@ -30,20 +38,40 @@ class ProjectStorageRepository(private val context : Context) {
     fun getPhotoFile( projectId : String , fileName : String) : File =
         File(getImagesDir(projectId),fileName)
 
+    //Use to pick atomically the number of projects created and give a default
+   /* private suspend fun getNextDefaultProjectName() : String = counterMutex.withLock {
+        /*val currentCount = if(prefs.contains(KEY_PROJECT_COUNTER)){
+            prefs.getInt(KEY_PROJECT_COUNTER,0)
+        }else{
+            projectRootDir.listFiles()?.count{it.isDirectory} ?: 0
+        }
+
+        val nextCount = currentCount + 1
+        prefs.edit { putInt(KEY_PROJECT_COUNTER, nextCount) }
+        "Project $nextCount"*/
+        val regex = Regex("""^Project (\d+)$""")
+        val highestNumber = getAllProjects()
+            .mapNotNull { project -> regex.matchEntire(project.name)?.groupValues?.get(1)?.toIntOrNull() }
+            .maxOrNull() ?: 0
+
+        "Project ${highestNumber + 1}"
+    }*/
     /**
      * Initialize a new project folder and writes its initial projects.json
      * */
     suspend fun createProject(
-        name : String,
+        customName : String? = null,
         intrinsics : CameraIntrinsicsData
     ) : ReconstructionProject = withContext(Dispatchers.IO)
     { // Suspend behaves like an async function already attached to await
+        val resolvedName = customName?.takeIf { it.isNotBlank() } ?: "Default Project"
+
         val projectId = UUID.randomUUID().toString()
         getImagesDir(projectId)
 
         val project = ReconstructionProject(
             id = projectId,
-            name = name,
+            name = resolvedName,
             createdAtMillis = System.currentTimeMillis(),
             intrinsics = intrinsics,
             photos = emptyList()
@@ -106,8 +134,14 @@ class ProjectStorageRepository(private val context : Context) {
         val targetFile = File(projectDir,"project.json")
         val tempFile = File(projectDir,"project.json.tmp")
 
-        //write tmp first , if the app crash or close wont corrupt the file
+        //write tmp first , if the app crash or close won't corrupt the file
         tempFile.writeText(json.encodeToString(project))
         tempFile.renameTo(targetFile)
     }
+
+    /*companion object {
+        private val counterMutex = Mutex()
+        private const val PREFS_NAME = "harpia_project_prefs"
+        private const val KEY_PROJECT_COUNTER = "project_counter"
+    }*/
 }
